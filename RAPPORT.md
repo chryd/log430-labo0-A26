@@ -21,7 +21,7 @@ Dans l'étape setup, GitHub prépare la machine virtuelle pour l'exécution du w
 
 ## 3. Quel type d'informations pouvez-vous obtenir via la commande `top` ? Veuillez donner quelques exemples. Veuillez inclure la sortie du terminal dans votre réponse.
 
-Réponse
+Docker stats donne une vue agrégée du conteneur telle que vue par le moteur Docker, alors que top donne une vue par processus, depuis l'intérieur du conteneur (utile pour voir quel processus consomme quoi).
 
 # Déploiement
 
