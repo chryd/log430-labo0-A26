@@ -42,9 +42,39 @@ La capture d'écran suivante montre le résultat de la commande `top`. Celle-ci 
 
 ![Capture d'écran du résultat de la commande top](docs\rapport\docker-top.png)
 
-# Déploiement
+# Description du laboratoire
 
-### Pipeline CI
+### Architecture
+
+Le code source du projet est simple : il s'agit d'un seul fichier python ![calculator.py](src/calculator.py) qui implémente le `main` et toutes les fonctions utilitaires. La variable injectée dans le code provient du fichier d'environnement [!.env](.env). Elle est lue au runtime dans `get_hello_message` :
+
+```py
+with open(".env", "r") as file:
+  content = file.read()
+  content_parts = content.split("=")
+  if len(content_parts) == 2:
+    username = content_parts[1]
+    message += f"Bienvenu(e) {username}\n"
+```
+
+L'application est exécutée dans un contenant Docker, qui est configurée avec le [!Dockerfile](Dockerfile) et le ![docker-compose](docker-compose.yml).
+
+### Fonctionnalités implémentées
+
+- Ajout de tests unitaires dans ![test_calculator.py](src/tests/test_calculator.py) : nous avons ajouté un test par opération qui vérifie avec `assert` le résultat d'opérations simples. Le test pour `addition()`, par exemple, vérifie :
+
+```py
+def test_addition():
+  assert my_calculator.addition(1,1) == 2
+```
+
+- Publication manuelle de l'image Docker dans `GHCR` : nous avons construit puis publié l'image grâce à Docker en utilisant un token `Personal Access` de type `classic`, ce qui permet de conserver une copie de l'image de l'application dans le registre. Elle apparaît alors dans les `packages` du profil GitHub :
+
+![Image dans le GHCR](docs/rapport/ghcr.png)
+
+- Création d'une ![pipeline CD](.github/workflows/cd.yml) (voir la section suivante).
+
+### Déploiement
 
 Le ![pipeline CI](.github/workflows/ci.yml) est déclenché à chaque `push` ou `pull_request`.
 
@@ -106,8 +136,6 @@ L'exécution de bout en bout de la pipeline est visible dans l'onglet GitHub Act
 - `Complete job`, qui clôt le build en nettoyant tous les processus orphelins.
 
 ![Capture d'écran de l'action CI](docs/rapport/pipeline-ci.png)
-
-### Pipeline CD
 
 Le ![pipeline CD](.github/workflows/cd.yml), lui, est déclenché uniquement lorsqu'un changement est poussé sur la branche `main`.
 
@@ -172,8 +200,29 @@ Nous pouvons également voir le résultat de l'exécution de la pipeline dans l'
 
 ![Capture d'écran de l'action CD](docs/rapport/pipeline-cd.png)
 
+### Difficultés rencontrées
+
+Le laboratoire étant plutôt simple, nous n'avons pas rencontré trop de difficultés. Toutefois, nous n'arrivions pas à obtenir les ressources consommées par le conteneur Docker avec la commande `docker compose exec calculator top`. La première raison est que top n'est pas dans l'image `python:3.12-slim`, donc nous avons changé la version de l'image dans le Dockerfile :
+
+```Dockerfile
+# De
+FROM python:3.12-slim
+# À
+FROM python:3.11-slim
+```
+
+Il fallait également lancer une commande supplémentaire pour que la commande fonctionne. Nous l'avons ajouté dans le Dockerfile pour réduire le nombre de commandes manuelles à faire :
+
+```Dockerfile
+RUN apt-get update && apt-get install -y procps
+```
+
 ### Apprentissages
 
 Ce laboratoire nous a montré la différence entre CI et CD. Alors que le CI sert à valider automatiquement le code, le CD permet le déploiement automatique en construisant et publiant une image Docker du dépôt livré.
 
 Également, nous avons appris que les pipelines sont hautement configurables et que nous déterminons l'ordre des étapes exécutées et ce que chacune fait. La gestion des dépendances, de l'authentification et de l'exécution sur une machine virtuelle sont toutes à prendre en compte. C'est surtout la création d'une variable pour le nom de notre dépôt en minuscule qui nous a fait réaliser que la configuration des pipelines est importante et de notre responsabilité.
+
+### Répartition des tâches
+
+Nous avons fait ce laboratoire ensemble plutôt que de se diviser les responsabilités. La répartition était égale.
